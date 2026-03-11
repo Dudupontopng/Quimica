@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alquimista de Elementos</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e24; color: #fff; text-align: center; padding: 50px; }
+        .container { background-color: #2b2b36; padding: 30px; border-radius: 10px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+        select, button { padding: 10px; margin: 10px; font-size: 16px; border-radius: 5px; border: none; }
+        button { background-color: #ffcc00; color: #1e1e24; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #e6b800; }
+        #resultado-box { margin-top: 20px; padding: 15px; background-color: #444455; border-radius: 5px; min-height: 50px; }
+        .composto-destaque { font-size: 24px; color: #00ffcc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>⚗️ Laboratório de Síntese</h2>
+        <p>Selecione dois elementos para tentar uma reação química:</p>
+        
+        <select id="elemento1">
+            <option value="">Carregando...</option>
+        </select>
+        
+        <span style="font-size: 24px; font-weight: bold;">+</span>
+        
+        <select id="elemento2">
+            <option value="">Carregando...</option>
+        </select>
+        <br>
+        <button onclick="combinar()">Sintetizar!</button>
+
+        <div id="resultado-box">
+            <p id="mensagem-resultado">O resultado da reação aparecerá aqui.</p>
+        </div>
+    </div>
+
+    <script>
+        // Carrega os elementos do banco de dados ao abrir a página
+        async function carregarElementos() {
+            try {
+                const response = await fetch('http://localhost:3000/api/elementos');
+                const result = await response.json();
+                
+                const select1 = document.getElementById('elemento1');
+                const select2 = document.getElementById('elemento2');
+                
+                select1.innerHTML = '';
+                select2.innerHTML = '';
+                
+                result.data.forEach(el => {
+                    const option = `<option value="${el.simbolo}">${el.simbolo} (${el.nome})</option>`;
+                    select1.innerHTML += option;
+                    select2.innerHTML += option;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar elementos:", error);
+            }
+        }
+
+        // Envia a combinação para o backend validar
+        async function combinar() {
+            const el1 = document.getElementById('elemento1').value;
+            const el2 = document.getElementById('elemento2').value;
+            const boxResultado = document.getElementById('mensagem-resultado');
+
+            boxResultado.innerHTML = "Processando reação...";
+
+            try {
+                const response = await fetch('http://localhost:3000/api/combinar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ el1, el2 })
+                });
+                
+                const result = await response.json();
+
+                if (result.sucesso) {
+                    boxResultado.innerHTML = `
+                        <div class="composto-destaque">${result.resultado}</div>
+                        <p>${result.descricao}</p>
+                    `;
+                } else {
+                    boxResultado.innerHTML = `<p style="color: #ff6666;">${result.mensagem}</p>`;
+                }
+            } catch (error) {
+                boxResultado.innerHTML = "Erro de conexão com o laboratório (servidor).";
+            }
+        }
+
+        // Inicializa
+        carregarElementos();
+    </script>
+</body>
+</html>
